@@ -38,9 +38,10 @@ class Drone(models.Model):
 
 class Medication(models.Model):
     name = models.CharField(max_length=250, validators=[RegexValidator(regex=r"^[a-zA-Z0-9\-\_]+$", message="Invalid Field")])
-    weight = models.IntegerField()
-    code = models.CharField(max_length=250, validators=[RegexValidator(regex=r"^[a-zA-Z0-9\-]+$", message="Invalid Field")])
+    weight = models.DecimalField(max_digits=5, decimal_places=2)
+    code = models.CharField(max_length=250, validators=[RegexValidator(regex=r"^[A-Z0-9\_]+$", message="Invalid Field")])
     image = models.ImageField(null=True, blank=True, upload_to="medication/%Y%m%d")
+    drone = models.ForeignKey(Drone, related_name="medicts_drone", on_delete=models.CASCADE, null=True, blank=True)
 
     class Meta:
         verbose_name = "Medication"
