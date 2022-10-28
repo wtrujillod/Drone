@@ -1,3 +1,5 @@
+from django.db.models import Q
+from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework import viewsets, generics, filters
 from rest_framework.views import APIView
@@ -36,7 +38,11 @@ class LoadedMedicationForDrone(generics.ListAPIView):
     Input: drone pk
     """
     serializer_class = MedicationSerializer
-    queryset = Medication.objects.all()
+
+    def get_queryset(self):
+        queryset = self.get_serializer().Meta.model.objects.all()
+        drone = get_object_or_404(Drone, id=self.kwargs.get('drone', 0))
+        return queryset.filter(drone=drone)
 
 
 class DroneBatteryLevel(generics.RetrieveAPIView):
@@ -46,4 +52,23 @@ class DroneBatteryLevel(generics.RetrieveAPIView):
     """
     serializer_class = BatteryDroneSerializer
     queryset = Drone.objects.all()
+
+
+class AvailableDroneForLoading(generics.ListAPIView):
+    """
+    API for check available drones for loading.
+    """
+    serializer_class = DroneSerializer
+
+    def get_queryset(self):
+        drone = self.get_serializer().Meta.model.objects.all().exclude(Q(state__in=[3]) | Q(battery_capacity__lt=25))
+        return drone
+
+
+class LoadingDroneWithMedicationViewSet(viewsets.ModelViewSet):
+    """
+    API for loading a drone with medication items.
+    """
+    queryset = Medication.objects.all()
+    serializer_class = DroneWithMedicationSerializer
 

@@ -6,6 +6,7 @@ class DroneSerializer(serializers.ModelSerializer):
     """
     Serializer for instances of the Drone model. Contains all the fields of the model.
     """
+
     class Meta:
         model = Drone
         fields = '__all__'
@@ -15,6 +16,7 @@ class BatteryDroneSerializer(serializers.ModelSerializer):
     """
     Serializer for instances of the Drone model. Contains pk, serial_number, battery_capacity fields of the model.
     """
+
     class Meta:
         model = Drone
         fields = ['pk', 'serial_number', 'battery_capacity']
@@ -33,6 +35,15 @@ class MedicationSerializer(serializers.ModelSerializer):
     """
     drone = serializers.StringRelatedField()
 
+    class Meta:
+        model = Medication
+        fields = '__all__'
+
+
+class DroneWithMedicationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for add instance of the Drone model in instance of the Medication model. Contains all the fields of the models.
+    """
     class Meta:
         model = Medication
         fields = '__all__'
