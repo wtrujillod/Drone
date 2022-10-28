@@ -1,7 +1,7 @@
 from django.db.models import Q
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
-from rest_framework import viewsets, generics, filters
+from rest_framework import viewsets, generics, filters, status
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from ..models import *
@@ -65,10 +65,33 @@ class AvailableDroneForLoading(generics.ListAPIView):
         return drone
 
 
-class LoadingDroneWithMedicationViewSet(viewsets.ModelViewSet):
+class LoadingDroneWithMedication(generics.UpdateAPIView):
     """
     API for loading a drone with medication items.
+    Input: medication pk
+    Note: Only medicines that are not loaded to a drone can be load
+
     """
-    queryset = Medication.objects.all()
     serializer_class = DroneWithMedicationSerializer
 
+    def get_queryset(self, pk):
+        return self.get_serializer().Meta.model.objects.filter(drone=None).filter(id=pk).first()
+
+    def patch(self, request, pk=None):
+        if self.get_queryset(pk):
+            medication = self.serializer_class(self.get_queryset(pk))
+            return Response(medication.data, status=status.HTTP_200_OK)
+        return Response({'error': 'This medication not available to load because is loaded in other drone'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, pk=None):
+        if self.get_queryset(pk):
+            drone = Drone.objects.filter(id=request.data['drone']).first()
+            if drone.battery_capacity > 25:
+                medication = self.serializer_class(self.get_queryset(pk), data=request.data)
+                if medication.is_valid():
+                    medication.save()
+                return Response(medication.errors, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {'error': 'The selected drone cannot be charged because its battery capacity is less than 25%'},
+                status=status.HTTP_405_METHOD_NOT_ALLOWED)

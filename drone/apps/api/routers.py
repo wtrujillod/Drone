@@ -8,7 +8,6 @@ router = DefaultRouter()
 
 router.register(r'drones_crud', DroneViewSet)
 router.register(r'medications_crud', MedicationViewSet)
-router.register(r'loading_medications_drone', LoadingDroneWithMedicationViewSet)
 
 urlpatterns = router.urls
 
