@@ -28,3 +28,22 @@ class MedicationViewSet(viewsets.ModelViewSet):
     """
     queryset = Medication.objects.all()
     serializer_class = MedicationSerializer
+
+
+class LoadedMedicationForDrone(generics.ListAPIView):
+    """
+    API for check loaded medication items for a given drone.
+    Input: drone pk
+    """
+    serializer_class = MedicationSerializer
+    queryset = Medication.objects.all()
+
+
+class DroneBatteryLevel(generics.RetrieveAPIView):
+    """
+    API for check drone battery level for a given drone.
+    Input: drone pk
+    """
+    serializer_class = BatteryDroneSerializer
+    queryset = Drone.objects.all()
+

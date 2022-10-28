@@ -1,11 +1,12 @@
-from django.urls import path
+from django.urls import path,include
 from django.conf.urls.static import static
 from django.conf import settings
 from .api import *
 
 urlpatterns = [
-    path('drones/', DroneAPIView.as_view(), name="drone_api"),
-    path('medication/', MedicationAPIView.as_view(), name="medication_api"),
+    path('api/', include('apps.api.routers')),
+    path('medications_for_drone/<int:drone>/', LoadedMedicationForDrone.as_view(), name='LoadedMedicationForDrone'),
+    path('drone_battery_level/<int:pk>/', DroneBatteryLevel.as_view(), name='DroneBatteryLevel'),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
