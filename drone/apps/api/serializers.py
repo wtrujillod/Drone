@@ -46,4 +46,4 @@ class DroneWithMedicationSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Medication
-        fields = '__all__'
+        fields = ['id', 'name', 'weight', 'drone']

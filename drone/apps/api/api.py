@@ -87,11 +87,32 @@ class LoadingDroneWithMedication(generics.UpdateAPIView):
     def put(self, request, pk=None):
         if self.get_queryset(pk):
             drone = Drone.objects.filter(id=request.data['drone']).first()
-            if drone.battery_capacity > 25:
-                medication = self.serializer_class(self.get_queryset(pk), data=request.data)
-                if medication.is_valid():
-                    medication.save()
-                return Response(medication.errors, status=status.HTTP_404_NOT_FOUND)
-            return Response(
-                {'error': 'The selected drone cannot be charged because its battery capacity is less than 25%'},
-                status=status.HTTP_405_METHOD_NOT_ALLOWED)
+            if drone:
+                med_drone = list(Medication.objects.filter(drone=drone).values_list('weight'))
+                med_drone_list = [med_drone[i][0] for i in range(len(med_drone))]
+                if len(med_drone_list) > 0:
+                    available_load = drone.weight_limit - sum(med_drone_list)
+                else:
+                    available_load = drone.weight_limit
+
+                if int(request.data['weight']) > available_load:
+                    return Response(
+                        {'error': 'The selected drone cannot be charged because the weight is greater than it can load.'},
+                        status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+                elif drone.battery_capacity < 25:
+                    return Response(
+                        {'error': 'The selected drone cannot be charged because its battery capacity is less than 25%'},
+                        status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+                else:
+                    medication = self.serializer_class(self.get_queryset(pk), data=request.data)
+                    if medication.is_valid():
+                        medication.save()
+                        if drone.state != 2:
+                            drone.state = 2
+
+                        return Response(medication.data, status=status.HTTP_200_OK)
+                    return Response(medication.errors, status=status.HTTP_404_NOT_FOUND)
+
+            return Response({'error': 'The selected drone not exist'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
