@@ -9,6 +9,13 @@ WEIGHT_LIST = [
     ('HW', 'Heavyweight')
 ]
 
+WEIGHT_DATA_EXT = {
+    'LW': [900, 2],
+    'MW': [1200, 5],
+    'CW': [3000, 8],
+    'HW': [6200, 10]
+}
+
 STATE_LIST = [
     (1, 'IDLE'),
     (2, 'LOADING'),
@@ -43,9 +50,11 @@ class Drone(models.Model):
 
 
 class Medication(models.Model):
-    name = models.CharField(max_length=250, validators=[RegexValidator(regex=r"^[a-zA-Z0-9\-\_]+$", message="Invalid Field")])
+    name = models.CharField(max_length=250,
+                            validators=[RegexValidator(regex=r"^[a-zA-Z0-9\-\_]+$", message="Invalid Field")])
     weight = models.IntegerField()
-    code = models.CharField(max_length=250, validators=[RegexValidator(regex=r"^[A-Z0-9\_]+$", message="Invalid Field")])
+    code = models.CharField(max_length=250,
+                            validators=[RegexValidator(regex=r"^[A-Z0-9\_]+$", message="Invalid Field")])
     image = models.ImageField(null=True, blank=True, upload_to="medication/%Y%m%d")
     drone = models.ForeignKey(Drone, related_name="medicts_drone", on_delete=models.CASCADE, null=True, blank=True)
 

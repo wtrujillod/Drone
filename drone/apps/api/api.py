@@ -92,6 +92,7 @@ class LoadingDroneWithMedication(generics.UpdateAPIView):
             if drone:
                 med_drone = list(Medication.objects.filter(drone=drone).values_list('weight'))
                 med_drone_list = [med_drone[i][0] for i in range(len(med_drone))]
+
                 if len(med_drone_list) > 0:
                     available_load = drone.weight_limit - sum(med_drone_list)
                 else:
@@ -128,7 +129,7 @@ class ChangeStateDrone(generics.UpdateAPIView):
     Input: drone pk
 
     """
-    serializer_class = DroneSerializer
+    serializer_class = StateDroneSerializer
 
     def get_queryset(self, pk):
         return self.get_serializer().Meta.model.objects.filter(id=pk).first()
@@ -137,8 +138,7 @@ class ChangeStateDrone(generics.UpdateAPIView):
         if self.get_queryset(pk):
             drone = self.serializer_class(self.get_queryset(pk))
             return Response(drone.data, status=status.HTTP_200_OK)
-        return Response({'error': 'This drone not exist.'},
-                        status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'This drone not exist.'}, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request, pk=None):
         if self.get_queryset(pk):
@@ -164,8 +164,8 @@ class ChangeStateDrone(generics.UpdateAPIView):
                     if drone_battery_lv < 25:
                         self.get_queryset(pk).change_batt_lv(100)
                         drone_serializer = self.serializer_class(self.get_queryset(pk))
-
-                    return Response(drone_serializer.data, status=status.HTTP_200_OK)
+                        return Response(drone_serializer.data, status=status.HTTP_200_OK)
+                    return Response(drone.data, status=status.HTTP_200_OK)
 
                 elif int(request.data['state']) != drone_state + 1:
                     return Response({'error': 'State ' + state_dict[drone_state] + ' can only be changed to ' +
