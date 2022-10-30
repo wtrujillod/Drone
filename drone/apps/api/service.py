@@ -1,3 +1,5 @@
+from simple_history.utils import update_change_reason
+
 from ..models import *
 
 
@@ -35,6 +37,7 @@ def change_battery_level(pk):
     battery_level = round(battery_level - percentage_battery_consumption)
     drone.battery_level = battery_level
     drone.save()
+    update_change_reason(drone, 'Change battery level')
 
     medications_drone = Medication.objects.filter(drone=drone)
     for medication in medications_drone:

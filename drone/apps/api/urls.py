@@ -10,6 +10,8 @@ urlpatterns = [
     path('available_drone_for_loading/', AvailableDroneForLoading.as_view(), name='AvailableDroneForLoading'),
     path('loading_medications_drone/<int:pk>/', LoadingDroneWithMedication.as_view(), name='LoadingDroneWithMedication'),
     path('change_state_drone/<int:pk>/', ChangeStateDrone.as_view(), name='ChangeStateDrone'),
+    path('history_battery_level/', history_battery_level, name='HistoryBatteryLevel'),
+    path('history_battery_level/<int:pk>/', history_drone_battery_level, name='HistoryBatteryLevelForDrone'),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

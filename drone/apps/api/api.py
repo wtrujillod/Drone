@@ -155,15 +155,18 @@ class ChangeStateDrone(generics.UpdateAPIView):
 
                 elif int(request.data['state']) == 6:
                     drone.save()
+                    update_change_reason(self.get_queryset(pk), 'Change state')
                     change_battery_level(pk)
                     drone_serializer = self.serializer_class(self.get_queryset(pk))
                     return Response(drone_serializer.data, status=status.HTTP_200_OK)
 
                 elif int(request.data['state']) == 1 and drone_state == 6:
                     drone.save()
+                    update_change_reason(self.get_queryset(pk), 'Change state')
                     if drone_battery_lv < 25:
                         self.get_queryset(pk).change_batt_lv(100)
                         drone_serializer = self.serializer_class(self.get_queryset(pk))
+                        update_change_reason(self.get_queryset(pk), 'Change battery level')
                         return Response(drone_serializer.data, status=status.HTTP_200_OK)
                     return Response(drone.data, status=status.HTTP_200_OK)
 
@@ -174,6 +177,40 @@ class ChangeStateDrone(generics.UpdateAPIView):
 
                 else:
                     drone.save()
+                    update_change_reason(self.get_queryset(pk), 'Change state')
                     return Response(drone.data, status=status.HTTP_200_OK)
 
             return Response(drone.errors, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+def history_drone_battery_level(request, pk=None):
+    """
+    API for Audit log history to check battery levels of a drone.
+    Input: drone pk
+    """
+    if request.method == 'GET':
+        drone = Drone.objects.filter(id=pk).first()
+        if drone:
+            history = drone.historical.filter(history_type='~', history_change_reason='Change battery level')
+            history_serializer = HistoryDroneSerializer(history, many=True)
+            return Response(history_serializer.data, status=status.HTTP_200_OK)
+        return Response({'error': 'The selected drone not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+def history_battery_level(request):
+    """
+    API for Audit log history to verify drone battery levels.
+    """
+    result = []
+    if request.method == 'GET':
+        drones = Drone.objects.all()
+        if drones.count() > 0:
+            for drone in drones:
+                history = drone.historical.filter(history_type='~', history_change_reason='Change battery level')
+                history_serializer = HistoryDroneSerializer(history, many=True)
+                if history_serializer.data:
+                    result += history_serializer.data
+            return Response(result, status=status.HTTP_200_OK)
+        return Response({'error': 'Not Found'}, status=status.HTTP_404_NOT_FOUND)

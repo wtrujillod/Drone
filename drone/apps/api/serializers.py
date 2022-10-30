@@ -14,6 +14,7 @@ class DroneSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         drone = Drone.objects.create(**validated_data)
         complete_data_extension(drone.pk, drone.model)
+        update_change_reason(drone, 'Create')
         return drone
 
 
@@ -41,14 +42,31 @@ class StateDroneSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Drone
-        fields = ['pk', 'serial_number', 'battery_level', 'state']
+        fields = ['pk', 'serial_number', 'state']
 
     def to_representation(self, instance):
         return {
             'id': instance.pk,
             'serial_number': instance.serial_number,
-            'battery_level': instance.battery_level,
             'state': instance.state
+        }
+
+
+class HistoryDroneSerializer(serializers.ModelSerializer):
+    """
+    Serializer for instances of the Drone model. Contains pk, serial_number, battery_level and state fields of the model.
+    """
+
+    class Meta:
+        model = Drone
+        fields = ['serial_number', 'battery_level', 'state', 'history_date']
+
+    def to_representation(self, instance):
+        return {
+            'serial_number': instance.serial_number,
+            'history_date': instance.history_date,
+            'state': instance.state,
+            'battery_level': instance.battery_level
         }
 
 
