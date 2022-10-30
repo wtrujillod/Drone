@@ -5,6 +5,7 @@ from rest_framework import viewsets, generics, filters, status
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from ..models import *
+from .service import *
 from .serializers import *
 
 
@@ -61,7 +62,8 @@ class AvailableDroneForLoading(generics.ListAPIView):
     serializer_class = DroneSerializer
 
     def get_queryset(self):
-        drone = self.get_serializer().Meta.model.objects.all().exclude(Q(state__in=[3]) | Q(battery_capacity__lt=25))
+        drone = self.get_serializer().Meta.model.objects.all().exclude(
+            Q(state__in=[3, 4, 5, 6]) | Q(battery_level__lt=25))
         return drone
 
 
@@ -97,10 +99,11 @@ class LoadingDroneWithMedication(generics.UpdateAPIView):
 
                 if int(request.data['weight']) > available_load:
                     return Response(
-                        {'error': 'The selected drone cannot be charged because the weight is greater than it can load.'},
+                        {
+                            'error': 'The selected drone cannot be charged because the weight is greater than it can load.'},
                         status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-                elif drone.battery_capacity < 25:
+                elif drone.battery_level < 25:
                     return Response(
                         {'error': 'The selected drone cannot be charged because its battery capacity is less than 25%'},
                         status=status.HTTP_405_METHOD_NOT_ALLOWED)
@@ -111,8 +114,66 @@ class LoadingDroneWithMedication(generics.UpdateAPIView):
                         medication.save()
                         if drone.state != 2:
                             drone.state = 2
+                            drone.save()
 
                         return Response(medication.data, status=status.HTTP_200_OK)
                     return Response(medication.errors, status=status.HTTP_404_NOT_FOUND)
 
             return Response({'error': 'The selected drone not exist'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class ChangeStateDrone(generics.UpdateAPIView):
+    """
+    API for change state a drone.
+    Input: drone pk
+
+    """
+    serializer_class = DroneSerializer
+
+    def get_queryset(self, pk):
+        return self.get_serializer().Meta.model.objects.filter(id=pk).first()
+
+    def patch(self, request, pk=None):
+        if self.get_queryset(pk):
+            drone = self.serializer_class(self.get_queryset(pk))
+            return Response(drone.data, status=status.HTTP_200_OK)
+        return Response({'error': 'This drone not exist.'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, pk=None):
+        if self.get_queryset(pk):
+            drone_origin = self.serializer_class(self.get_queryset(pk))
+            drone_state = int(drone_origin.data['state'])
+            drone_battery_lv = int(drone_origin.data['battery_level'])
+            state_dict = dict(STATE_LIST)
+
+            drone = self.serializer_class(self.get_queryset(pk), data=request.data)
+            if drone.is_valid():
+                if drone_state == 1:
+                    return Response({'error': 'State ' + state_dict[1] + ' can only be changed by loading the drone.'},
+                                    status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+                elif int(request.data['state']) == 6:
+                    drone.save()
+                    change_battery_level(pk)
+                    drone_serializer = self.serializer_class(self.get_queryset(pk))
+                    return Response(drone_serializer.data, status=status.HTTP_200_OK)
+
+                elif int(request.data['state']) == 1 and drone_state == 6:
+                    drone.save()
+                    if drone_battery_lv < 25:
+                        self.get_queryset(pk).change_batt_lv(100)
+                        drone_serializer = self.serializer_class(self.get_queryset(pk))
+
+                    return Response(drone_serializer.data, status=status.HTTP_200_OK)
+
+                elif int(request.data['state']) != drone_state + 1:
+                    return Response({'error': 'State ' + state_dict[drone_state] + ' can only be changed to ' +
+                                              state_dict[drone_state + 1] + '.'},
+                                    status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+                else:
+                    drone.save()
+                    return Response(drone.data, status=status.HTTP_200_OK)
+
+            return Response(drone.errors, status=status.HTTP_404_NOT_FOUND)
