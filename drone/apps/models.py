@@ -24,7 +24,8 @@ class Drone(models.Model):
     serial_number = models.CharField(max_length=100, blank=False, null=False)
     model = models.CharField(max_length=15, choices=WEIGHT_LIST)
     weight_limit = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(500)])
-    battery_capacity = models.IntegerField()
+    battery_capacity = models.IntegerField(validators=[MinValueValidator(20), MaxValueValidator(100)])
+    battery_level = models.IntegerField(default=100, validators=[MinValueValidator(0), MaxValueValidator(100)])
     state = models.IntegerField(choices=STATE_LIST)
     historical = HistoricalRecords()
 
@@ -34,6 +35,11 @@ class Drone(models.Model):
 
     def __str__(self):
         return f'{self.serial_number}'
+
+    def change_batt_lv(self, level):
+        self.battery_level = level
+        self.save()
+        return True
 
 
 class Medication(models.Model):
@@ -49,3 +55,17 @@ class Medication(models.Model):
 
     def __str__(self):
         return f'{self.name} {self.code}'
+
+
+class DataExtension(models.Model):
+    table_extension = models.CharField(max_length=100)
+    field_extension = models.CharField(max_length=255)
+    key_register = models.IntegerField()
+    value = models.CharField(max_length=255)
+
+    class Meta:
+        verbose_name = "Data Extension"
+        verbose_name_plural = "Data Extensions"
+
+    def __str__(self):
+        return f'{self.field_extension} {self.value}'
